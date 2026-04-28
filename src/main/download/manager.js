@@ -7,6 +7,7 @@ const { ipcMain } = require('electron');
 const { DownloadThread } = require('./download');
 const { DownloadM3u8Thread } = require('./download-m3u8');
 const { MonitorThread } = require('./monitor');
+const { splitVideo, downloadSegment } = require('./ffmpeg');
 
 const DownloadState = {
   WAITING: 'waiting',
@@ -73,8 +74,42 @@ class DownloadManager {
     this.currentDownload = downloadData;
 
     try {
-      let downloadThread;
+      // Handle 'split_part' directly with ffmpeg
+      if (item.splitData && item.splitData.type === 'split_part') {
+        const manifestUrl = item.dashManifestUrl || item.baseUrl;
+        
+        // Start monitor for UI (ffmpeg will send percent)
+        this.monitor = new MonitorThread(downloadData, (progressData) => {
+          this.sendProgress(progressData);
+        });
+        this.monitor.start();
+        
+        await downloadSegment(
+          manifestUrl, 
+          item.splitData.start, 
+          item.splitData.end, 
+          downloadData.outputPath,
+          (prog) => {
+            if (prog.percent !== undefined) {
+              downloadData.completedProgress = prog.percent;
+            }
+          }
+        );
+        
+        const downloadTime = this.monitor.getDownloadTime();
+        this.monitor.stop();
+        this.monitor = null;
 
+        this.mainWindow?.webContents.send('download:complete', {
+          id: downloadData.id,
+          downloadTime,
+        });
+        
+        this.currentDownload = null;
+        return;
+      }
+
+      // Normal download (or 'split_all' which post-processes)
       if (item.contentType === 'm3u8') {
         downloadThread = new DownloadM3u8Thread(downloadData);
       } else {
@@ -89,10 +124,22 @@ class DownloadManager {
       });
 
       // Set up completion/error handlers
-      downloadThread.on('completed', () => {
+      downloadThread.on('completed', async () => {
         const downloadTime = this.monitor.getDownloadTime();
         this.monitor.stop();
         this.monitor = null;
+
+        // Handle 'split_all' post-processing
+        if (item.splitData && item.splitData.type === 'split_all') {
+          this.sendProgress({ id: downloadData.id, speed: '분할 중...' });
+          try {
+            await splitVideo(downloadData.outputPath, item.splitData.duration, (prog) => {
+              this.sendProgress({ id: downloadData.id, speed: `분할 중... (${prog.output})` });
+            });
+          } catch (e) {
+            console.error('Split failed:', e);
+          }
+        }
 
         this.mainWindow?.webContents.send('download:complete', {
           id: downloadData.id,

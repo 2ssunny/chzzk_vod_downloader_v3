@@ -231,6 +231,57 @@
     </section>
   </main>
 
+  <!-- Download Options Modal -->
+  <div id="download-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">다운로드 옵션</h3>
+        <button id="btn-modal-close" class="btn-ghost" style="padding: 4px;">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-group">
+          <h3 class="settings-group-title">다운로드 방식</h3>
+          <div class="settings-field">
+            <select id="download-split-type" class="settings-select">
+              <option value="none">전체 다운로드</option>
+              <option value="split_all">전체를 일정한 길이로 분할</option>
+              <option value="split_part">특정 구간만 다운로드</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Split All Options -->
+        <div id="split-all-options" class="settings-group" style="display: none;">
+          <h3 class="settings-group-title">분할 길이 설정</h3>
+          <p class="settings-description">원본 영상을 초고속으로 다운로드 한 후, 입력한 시간(분) 단위로 무손실 분할합니다.</p>
+          <div class="settings-field">
+            <label for="split-duration">분할 단위 (분)</label>
+            <input type="number" id="split-duration" class="settings-input" value="60" min="5" max="300">
+          </div>
+        </div>
+
+        <!-- Split Part Options -->
+        <div id="split-part-options" class="settings-group" style="display: none;">
+          <h3 class="settings-group-title">구간 설정</h3>
+          <p class="settings-description">설정한 구간만 서버에서 다운로드합니다.</p>
+          <div class="settings-field settings-field-row" style="gap: 10px;">
+            <div style="flex: 1;">
+              <label for="split-start">시작 시간 (hh:mm:ss)</label>
+              <input type="text" id="split-start" class="settings-input" placeholder="00:00:00" value="00:00:00">
+            </div>
+            <div style="flex: 1;">
+              <label for="split-end">종료 시간 (hh:mm:ss)</label>
+              <input type="text" id="split-end" class="settings-input" placeholder="01:00:00">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-modal-add" class="btn-primary" style="width: 100%;">대기열에 추가</button>
+      </div>
+    </div>
+  </div>
+
   <script src="index.js"></script>
   <script src="search.js"></script>
 </body>

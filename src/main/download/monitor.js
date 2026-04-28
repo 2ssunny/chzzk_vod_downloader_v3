@@ -41,7 +41,9 @@ class MonitorThread {
 
     // Calculate progress percentage
     let progress = 0;
-    if (this.data.contentType === 'm3u8') {
+    if (this.data.splitData && this.data.splitData.type === 'split_part') {
+      progress = this.data.completedProgress || 0;
+    } else if (this.data.contentType === 'm3u8') {
       // For m3u8, progress is based on completed segments
       progress =
         this.data.totalRanges > 0

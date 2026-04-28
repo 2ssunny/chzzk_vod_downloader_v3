@@ -46,6 +46,20 @@ const queueEmpty = document.getElementById('queue-empty');
 const btnDownload = document.getElementById('btn-download');
 const btnStop = document.getElementById('btn-stop');
 const btnClearFinished = document.getElementById('btn-clear-finished');
+
+// Modal Elements
+const downloadModal = document.getElementById('download-modal');
+const btnModalClose = document.getElementById('btn-modal-close');
+const btnModalAdd = document.getElementById('btn-modal-add');
+const splitTypeSelect = document.getElementById('download-split-type');
+const splitAllOptions = document.getElementById('split-all-options');
+const splitPartOptions = document.getElementById('split-part-options');
+const splitDurationInput = document.getElementById('split-duration');
+const splitStartInput = document.getElementById('split-start');
+const splitEndInput = document.getElementById('split-end');
+
+let pendingDownloadResult = null;
+
 const btnSaveSettings = document.getElementById('btn-save-settings');
 
 // ============ Initialize ============
@@ -112,21 +126,74 @@ async function fetchContent() {
       return;
     }
 
-    addToQueue(result);
-    showStatus('추가 완료', 'success');
+    openDownloadModal(result);
+    showStatus('옵션을 선택하세요.', 'success');
   } catch (err) {
     showStatus(`오류: ${err.message}`, 'error');
   }
 }
 
+// ============ Modal Management ============
+function openDownloadModal(result) {
+  pendingDownloadResult = result;
+  
+  // Default values
+  splitTypeSelect.value = 'none';
+  splitAllOptions.style.display = 'none';
+  splitPartOptions.style.display = 'none';
+  
+  if (result.duration) {
+    const totalSecs = result.duration;
+    const endHH = String(Math.floor(totalSecs / 3600)).padStart(2, '0');
+    const endMM = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, '0');
+    const endSS = String(totalSecs % 60).padStart(2, '0');
+    splitEndInput.value = `${endHH}:${endMM}:${endSS}`;
+  } else {
+    splitEndInput.value = '01:00:00';
+  }
+  
+  downloadModal.style.display = 'flex';
+}
+
+function closeDownloadModal() {
+  downloadModal.style.display = 'none';
+  pendingDownloadResult = null;
+}
+
+btnModalClose.addEventListener('click', closeDownloadModal);
+
+splitTypeSelect.addEventListener('change', (e) => {
+  const val = e.target.value;
+  splitAllOptions.style.display = val === 'split_all' ? 'block' : 'none';
+  splitPartOptions.style.display = val === 'split_part' ? 'block' : 'none';
+});
+
+btnModalAdd.addEventListener('click', () => {
+  if (!pendingDownloadResult) return;
+  
+  const splitType = splitTypeSelect.value;
+  const splitData = { type: splitType };
+  
+  if (splitType === 'split_all') {
+    splitData.duration = parseInt(splitDurationInput.value) || 60;
+  } else if (splitType === 'split_part') {
+    splitData.start = splitStartInput.value.trim();
+    splitData.end = splitEndInput.value.trim();
+  }
+  
+  addToQueue(pendingDownloadResult, splitData);
+  closeDownloadModal();
+});
+
 // ============ Queue Management ============
-function addToQueue(item) {
+function addToQueue(item, splitData = { type: 'none' }) {
   item.id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
   item.state = 'waiting';
   item.progress = 0;
   item.speed = '';
   item.remainTime = '';
   item.downloadedSize = '';
+  item.splitData = splitData;
 
   // Default to highest resolution
   if (item.resolutions && item.resolutions.length > 0) {
@@ -237,6 +304,17 @@ function buildQueueItemHtml(item, isNew) {
         </div>
         <div class="queue-item-title" title="${escapeHtml(item.title || '')}">${escapeHtml(item.title || 'Unknown')}</div>
         ${metaParts.length > 0 ? `<div class="queue-item-meta">${metaParts.map((m) => `<span>${m}</span>`).join('')}</div>` : ''}
+        ${
+          item.splitData && item.splitData.type !== 'none'
+            ? `<div class="queue-item-meta" style="color: var(--accent); margin-top: 4px;">
+                <span>✂ ${
+                  item.splitData.type === 'split_all'
+                    ? `전체 분할 (${item.splitData.duration}분)`
+                    : `특정 구간 (${item.splitData.start} ~ ${item.splitData.end})`
+                }</span>
+               </div>`
+            : ''
+        }
         <div class="queue-item-resolutions">
           ${(item.resolutions || [])
             .map(

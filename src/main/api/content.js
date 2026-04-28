@@ -128,7 +128,7 @@ async function getVideoDashManifest(videoId, inKey) {
   const autoResolution = reps.length > 0 ? reps[reps.length - 1].resolution : null;
   const autoBaseUrl = reps.length > 0 ? reps[reps.length - 1].baseUrl : null;
 
-  return { resolutions: reps, autoResolution, autoBaseUrl };
+  return { resolutions: reps, autoResolution, autoBaseUrl, manifestUrl };
 }
 
 /**
@@ -301,6 +301,7 @@ async function fetchContentData(vodUrl, cookies, downloadPath) {
       resolutions: manifestData.resolutions,
       autoResolution: manifestData.autoResolution,
       autoBaseUrl: manifestData.autoBaseUrl,
+      dashManifestUrl: manifestData.manifestUrl || null,
       downloadPath,
       liveRewindPlaybackJson: info.liveRewindPlaybackJson,
       thumbnailUrl: info.metadata.thumbnailImageUrl,
