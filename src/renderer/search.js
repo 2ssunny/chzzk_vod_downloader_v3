@@ -8,6 +8,7 @@ const searchState = {
   contentType: 'videos', // 'videos' or 'clips'
   contentPage: 0,
   contentTotalPages: 0,
+  clipCursors: { 0: null },
   
   isLoading: false,
 };
@@ -57,6 +58,7 @@ contentTabBtns.forEach(btn => {
     contentTabBtns.forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     searchState.contentType = btn.dataset.contentType;
+    searchState.clipCursors = { 0: null }; // Reset cursors
     loadChannelContent(0);
   });
 });
@@ -68,8 +70,15 @@ btnPrevPage.addEventListener('click', () => {
 });
 
 btnNextPage.addEventListener('click', () => {
-  if (searchState.contentPage < searchState.contentTotalPages - 1) {
-    loadChannelContent(searchState.contentPage + 1);
+  const isVideos = searchState.contentType === 'videos';
+  if (isVideos) {
+    if (searchState.contentPage < searchState.contentTotalPages - 1) {
+      loadChannelContent(searchState.contentPage + 1);
+    }
+  } else {
+    if (searchState.clipCursors[searchState.contentPage + 1]) {
+      loadChannelContent(searchState.contentPage + 1);
+    }
   }
 });
 
@@ -216,7 +225,11 @@ async function loadChannelContent(page) {
     if (searchState.contentType === 'videos') {
       result = await window.electronAPI.getChannelVideos(channelId, page, 24);
     } else {
-      result = await window.electronAPI.getChannelClips(channelId, page, 24);
+      const cursor = searchState.clipCursors[page] || null;
+      result = await window.electronAPI.getChannelClips(channelId, cursor, 24);
+      if (result.nextCursor) {
+        searchState.clipCursors[page + 1] = result.nextCursor;
+      }
     }
     
     contentListLoading.style.display = 'none';
@@ -264,13 +277,23 @@ async function loadChannelContent(page) {
     }).join('');
     
     // Pagination setup
-    searchState.contentTotalPages = result.totalPage;
-    
-    if (result.totalPage > 1) {
-      contentPagination.style.display = 'flex';
-      pageInfo.textContent = `${page + 1} / ${result.totalPage}`;
-      btnPrevPage.disabled = page === 0;
-      btnNextPage.disabled = page >= result.totalPage - 1;
+    if (searchState.contentType === 'videos') {
+      searchState.contentTotalPages = result.totalPage;
+      
+      if (result.totalPage > 1) {
+        contentPagination.style.display = 'flex';
+        pageInfo.textContent = `${page + 1} / ${result.totalPage}`;
+        btnPrevPage.disabled = page === 0;
+        btnNextPage.disabled = page >= result.totalPage - 1;
+      }
+    } else {
+      // Clips pagination
+      if (page > 0 || result.nextCursor) {
+        contentPagination.style.display = 'flex';
+        pageInfo.textContent = `${page + 1} 페이지`;
+        btnPrevPage.disabled = page === 0;
+        btnNextPage.disabled = !result.nextCursor;
+      }
     }
     
   } catch (err) {

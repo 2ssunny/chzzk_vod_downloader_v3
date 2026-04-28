@@ -85,16 +85,16 @@ async function getChannelVideos(channelId, page = 0, size = 20) {
 /**
  * Get clips from a channel
  * @param {string} channelId
- * @param {number} page (0-based)
+ * @param {string|number} cursor 
  * @param {number} size
- * @returns {Promise<{clips: Array, page: number, totalCount: number, totalPage: number}>}
+ * @returns {Promise<{clips: Array, nextCursor: string|null}>}
  */
-async function getChannelClips(channelId, page = 0, size = 20) {
+async function getChannelClips(channelId, cursor = null, size = 20) {
   const url =
     (client.getEndpoint('channelClips') ||
       `${DEFAULTS.CHZZK_API}/service/v1/channels/{channelId}/clips`)
       .replace('{channelId}', channelId) +
-    `?sortType=LATEST&pagingType=PAGE&page=${page}&size=${size}`;
+    `?sortType=LATEST&size=${size}${cursor && cursor !== 0 ? '&clipUID=' + cursor : ''}`;
 
   const data = await client.fetchJson(url);
   const content = data.content || {};
@@ -112,9 +112,7 @@ async function getChannelClips(channelId, page = 0, size = 20) {
 
   return {
     clips,
-    page: content.page || page,
-    totalCount: content.totalCount || 0,
-    totalPage: content.totalPages || content.totalPage || Math.ceil((content.totalCount || 0) / size) || 1,
+    nextCursor: content.page?.next?.clipUID || null,
   };
 }
 
