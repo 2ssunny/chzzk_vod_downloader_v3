@@ -322,11 +322,15 @@ input, select, textarea, button {
   padding: var(--sp-md);
   display: flex;
   gap: var(--sp-md);
-  transition: border-color var(--transition-fast), transform var(--transition-fast);
-  animation: slideIn 0.3s ease-out;
+  transition: border-color var(--transition-fast);
 }
 .queue-item:hover {
   border-color: var(--border-hover);
+}
+
+/* Only animate on first render */
+.queue-item-enter {
+  animation: slideIn 0.3s ease-out;
 }
 
 @keyframes slideIn {
@@ -488,10 +492,14 @@ input, select, textarea, button {
   color: var(--text-primary);
   background: var(--bg-hover);
 }
-.btn-icon-danger:hover {
+.btn-icon-danger:hover:not(:disabled) {
   border-color: var(--danger);
   color: var(--danger);
   background: rgba(255, 77, 106, 0.1);
+}
+.btn-icon:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 /* State-specific styles */

@@ -60,7 +60,7 @@ async function init() {
   document.getElementById('server-enabled').checked = state.config.localServer?.enabled ?? true;
   document.getElementById('server-port').value = state.config.localServer?.port || 36363;
 
-  updateQueueUI();
+  renderFullQueue();
 }
 
 init();
@@ -122,7 +122,7 @@ function addToQueue(item) {
 
   state.queue.push(item);
   state.totalDownloads = state.queue.length;
-  updateQueueUI();
+  renderFullQueue();
   updateControlButtons();
 }
 
@@ -131,20 +131,24 @@ function removeFromQueue(id) {
   if (idx === -1) return;
 
   const item = state.queue[idx];
+  // Allow deletion if not currently downloading
+  if (item.state === 'downloading') return;
   if (item.state === 'finished') {
     state.completedDownloads--;
   }
   state.queue.splice(idx, 1);
   state.totalDownloads = state.queue.length;
-  updateQueueUI();
+  renderFullQueue();
   updateControlButtons();
 }
+// Expose to global scope for onclick handlers in innerHTML
+window.removeFromQueue = removeFromQueue;
 
 function clearFinished() {
   state.queue = state.queue.filter((item) => item.state !== 'finished');
   state.completedDownloads = 0;
   state.totalDownloads = state.queue.length;
-  updateQueueUI();
+  renderFullQueue();
   updateControlButtons();
 }
 
@@ -153,12 +157,15 @@ function selectResolution(itemId, resolution, baseUrl) {
   if (item && item.state === 'waiting') {
     item.selectedResolution = resolution;
     item.selectedBaseUrl = baseUrl;
-    updateQueueUI();
+    renderFullQueue();
   }
 }
+window.selectResolution = selectResolution;
 
 // ============ Queue UI Rendering ============
-function updateQueueUI() {
+
+// Full re-render (used when items are added/removed/resolution changed)
+function renderFullQueue() {
   downloadCount.textContent = `다운로드: ${state.completedDownloads}/${state.totalDownloads}`;
 
   if (state.queue.length === 0) {
@@ -168,11 +175,48 @@ function updateQueueUI() {
   }
 
   queueEmpty.style.display = 'none';
+  queueList.innerHTML = state.queue.map((item) => buildQueueItemHtml(item, true)).join('');
+}
 
-  queueList.innerHTML = state.queue
-    .map(
-      (item, idx) => `
-    <div class="queue-item ${item.state === 'downloading' ? 'downloading' : ''} ${item.state === 'finished' ? 'finished' : ''} ${item.state === 'failed' ? 'failed' : ''}" data-id="${item.id}">
+// Lightweight progress-only update (no DOM rebuild, no animation)
+function updateQueueProgress() {
+  downloadCount.textContent = `다운로드: ${state.completedDownloads}/${state.totalDownloads}`;
+
+  for (const item of state.queue) {
+    const el = queueList.querySelector(`[data-id="${item.id}"]`);
+    if (!el) continue;
+
+    // Update progress bar
+    const bar = el.querySelector('.progress-bar');
+    if (bar) bar.style.width = `${item.progress}%`;
+
+    // Update progress text
+    const pText = el.querySelector('.progress-text');
+    if (pText) pText.textContent = `${item.progress}%`;
+
+    // Update status line
+    const statusEl = el.querySelector('.queue-item-status');
+    if (statusEl && (item.state === 'downloading' || item.state === 'paused')) {
+      const parts = [];
+      if (item.state === 'paused') parts.push('<span>⏸ 일시정지</span>');
+      if (item.speed) parts.push(`<span>${item.speed}</span>`);
+      if (item.remainTime) parts.push(`<span>${item.remainTime}</span>`);
+      if (item.downloadedSize) parts.push(`<span>${item.downloadedSize}</span>`);
+      statusEl.innerHTML = parts.join('');
+    }
+
+    // Update state classes
+    el.className = `queue-item ${item.state === 'downloading' ? 'downloading' : ''} ${item.state === 'finished' ? 'finished' : ''} ${item.state === 'failed' ? 'failed' : ''}`;
+  }
+}
+
+function buildQueueItemHtml(item, isNew) {
+  const durationStr = item.duration ? formatDuration(item.duration) : '';
+  const dateStr = item.createdDate ? formatDate(item.createdDate) : '';
+  const metaParts = [durationStr, dateStr].filter(Boolean);
+
+  return `
+    <div class="queue-item ${item.state === 'downloading' ? 'downloading' : ''} ${item.state === 'finished' ? 'finished' : ''} ${item.state === 'failed' ? 'failed' : ''}${isNew ? ' queue-item-enter' : ''}" data-id="${item.id}">
       <img class="queue-item-thumbnail" src="${item.thumbnailUrl || ''}" alt="" onerror="this.style.display='none'">
       <div class="queue-item-info">
         <div class="queue-item-header">
@@ -181,12 +225,13 @@ function updateQueueUI() {
           <span class="queue-item-type">${escapeHtml(item.contentType || 'video')}</span>
         </div>
         <div class="queue-item-title" title="${escapeHtml(item.title || '')}">${escapeHtml(item.title || 'Unknown')}</div>
+        ${metaParts.length > 0 ? `<div class="queue-item-meta">${metaParts.map((m) => `<span>${m}</span>`).join('')}</div>` : ''}
         <div class="queue-item-resolutions">
           ${(item.resolutions || [])
             .map(
               (r) =>
                 `<button class="res-btn ${item.selectedResolution === r.resolution ? 'active' : ''}" 
-                  onclick="selectResolution('${item.id}', ${r.resolution}, '${r.baseUrl || ''}')" 
+                  onclick="selectResolution('${item.id}', ${r.resolution}, '${escapeAttr(r.baseUrl || '')}')" 
                   ${item.state !== 'waiting' ? 'disabled' : ''}>${r.resolution}p</button>`
             )
             .join('')}
@@ -212,14 +257,12 @@ function updateQueueUI() {
         ${item.state === 'failed' ? `<div class="queue-item-status"><span style="color:var(--danger)">✕ 실패</span></div>` : ''}
       </div>
       <div class="queue-item-actions">
-        <button class="btn-icon btn-icon-danger" onclick="removeFromQueue('${item.id}')" title="삭제">
+        <button class="btn-icon btn-icon-danger" onclick="removeFromQueue('${item.id}')" title="삭제" ${item.state === 'downloading' ? 'disabled' : ''}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
     </div>
-  `
-    )
-    .join('');
+  `;
 }
 
 function updateControlButtons() {
@@ -241,7 +284,7 @@ async function handleDownloadPause() {
       await window.electronAPI.pauseDownload(current.id);
       current.state = 'paused';
       btnDownload.querySelector('span').textContent = '다운로드';
-      updateQueueUI();
+      renderFullQueue();
     }
   } else {
     // Start download
@@ -251,7 +294,7 @@ async function handleDownloadPause() {
     state.isDownloading = true;
     next.state = 'downloading';
     btnDownload.querySelector('span').textContent = '일시정지';
-    updateQueueUI();
+    renderFullQueue();
     updateControlButtons();
 
     try {
@@ -267,7 +310,7 @@ async function handleDownloadPause() {
     } catch (err) {
       next.state = 'failed';
       state.isDownloading = false;
-      updateQueueUI();
+      renderFullQueue();
       updateControlButtons();
     }
   }
@@ -283,7 +326,7 @@ async function handleStop() {
     current.progress = 0;
     state.isDownloading = false;
     btnDownload.querySelector('span').textContent = '다운로드';
-    updateQueueUI();
+    renderFullQueue();
     updateControlButtons();
   }
 }
@@ -296,7 +339,7 @@ window.electronAPI.onDownloadProgress((data) => {
     item.speed = data.speed;
     item.remainTime = data.remainTime;
     item.downloadedSize = data.downloadedSize;
-    updateQueueUI();
+    updateQueueProgress(); // Lightweight update — no DOM rebuild
   }
 });
 
@@ -309,7 +352,7 @@ window.electronAPI.onDownloadComplete((data) => {
     state.completedDownloads++;
     state.isDownloading = false;
     btnDownload.querySelector('span').textContent = '다운로드';
-    updateQueueUI();
+    renderFullQueue();
     updateControlButtons();
 
     // Auto-start next
@@ -326,7 +369,7 @@ window.electronAPI.onDownloadError((data) => {
     item.state = 'failed';
     state.isDownloading = false;
     btnDownload.querySelector('span').textContent = '다운로드';
-    updateQueueUI();
+    renderFullQueue();
     updateControlButtons();
     showStatus(`다운로드 실패: ${data.error}`, 'error');
   }
@@ -386,6 +429,10 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+function escapeAttr(str) {
+  return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
 function formatSize(bytes) {
   if (!bytes || bytes === 0) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -396,4 +443,25 @@ function formatSize(bytes) {
     idx++;
   }
   return `${size.toFixed(2)} ${units[idx]}`;
+}
+
+function formatDuration(seconds) {
+  if (!seconds || seconds <= 0) return '';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}시간 ${m}분`;
+  if (m > 0) return `${m}분 ${s}초`;
+  return `${s}초`;
+}
+
+function formatDate(dateStr) {
+  if (!dateStr || dateStr === 'Unknown Date') return '';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+  } catch {
+    return dateStr;
+  }
 }
