@@ -78,7 +78,7 @@ async function getChannelVideos(channelId, page = 0, size = 20) {
     videos,
     page: content.page || page,
     totalCount: content.totalCount || 0,
-    totalPage: content.totalPage || 0,
+    totalPage: content.totalPages || content.totalPage || Math.ceil((content.totalCount || 0) / size) || 1,
   };
 }
 
@@ -114,7 +114,7 @@ async function getChannelClips(channelId, page = 0, size = 20) {
     clips,
     page: content.page || page,
     totalCount: content.totalCount || 0,
-    totalPage: content.totalPage || 0,
+    totalPage: content.totalPages || content.totalPage || Math.ceil((content.totalCount || 0) / size) || 1,
   };
 }
 
