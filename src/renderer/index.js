@@ -141,9 +141,6 @@ function removeFromQueue(id) {
   renderFullQueue();
   updateControlButtons();
 }
-// Expose to global scope for onclick handlers in innerHTML
-window.removeFromQueue = removeFromQueue;
-
 function clearFinished() {
   state.queue = state.queue.filter((item) => item.state !== 'finished');
   state.completedDownloads = 0;
@@ -160,7 +157,6 @@ function selectResolution(itemId, resolution, baseUrl) {
     renderFullQueue();
   }
 }
-window.selectResolution = selectResolution;
 
 // ============ Queue UI Rendering ============
 
@@ -217,7 +213,7 @@ function buildQueueItemHtml(item, isNew) {
 
   return `
     <div class="queue-item ${item.state === 'downloading' ? 'downloading' : ''} ${item.state === 'finished' ? 'finished' : ''} ${item.state === 'failed' ? 'failed' : ''}${isNew ? ' queue-item-enter' : ''}" data-id="${item.id}">
-      <img class="queue-item-thumbnail" src="${item.thumbnailUrl || ''}" alt="" onerror="this.style.display='none'">
+      <img class="queue-item-thumbnail" src="${item.thumbnailUrl || ''}" alt="">
       <div class="queue-item-info">
         <div class="queue-item-header">
           ${item.channelImageUrl ? `<img class="queue-item-channel-img" src="${item.channelImageUrl}" alt="">` : ''}
@@ -231,7 +227,7 @@ function buildQueueItemHtml(item, isNew) {
             .map(
               (r) =>
                 `<button class="res-btn ${item.selectedResolution === r.resolution ? 'active' : ''}" 
-                  onclick="selectResolution('${item.id}', ${r.resolution}, '${escapeAttr(r.baseUrl || '')}')" 
+                  data-action="resolution" data-item-id="${item.id}" data-resolution="${r.resolution}" data-baseurl="${escapeHtml(r.baseUrl || '')}" 
                   ${item.state !== 'waiting' ? 'disabled' : ''}>${r.resolution}p</button>`
             )
             .join('')}
@@ -257,7 +253,7 @@ function buildQueueItemHtml(item, isNew) {
         ${item.state === 'failed' ? `<div class="queue-item-status"><span style="color:var(--danger)">✕ 실패</span></div>` : ''}
       </div>
       <div class="queue-item-actions">
-        <button class="btn-icon btn-icon-danger" onclick="removeFromQueue('${item.id}')" title="삭제" ${item.state === 'downloading' ? 'disabled' : ''}>
+        <button class="btn-icon btn-icon-danger" data-action="delete" data-item-id="${item.id}" title="삭제" ${item.state === 'downloading' ? 'disabled' : ''}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -270,6 +266,24 @@ function updateControlButtons() {
   btnDownload.disabled = !hasWaiting && !state.isDownloading;
   btnStop.disabled = !state.isDownloading;
 }
+
+// ============ Queue Event Delegation ============
+// Using event delegation instead of inline onclick (blocked by CSP)
+queueList.addEventListener('click', (e) => {
+  const target = e.target.closest('[data-action]');
+  if (!target) return;
+
+  const action = target.dataset.action;
+  const itemId = target.dataset.itemId;
+
+  if (action === 'delete') {
+    removeFromQueue(itemId);
+  } else if (action === 'resolution') {
+    const resolution = parseInt(target.dataset.resolution);
+    const baseUrl = target.dataset.baseurl || '';
+    selectResolution(itemId, resolution, baseUrl);
+  }
+});
 
 // ============ Download Controls ============
 btnDownload.addEventListener('click', handleDownloadPause);
