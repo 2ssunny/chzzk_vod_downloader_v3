@@ -110,6 +110,7 @@ class DownloadManager {
       }
 
       // Normal download (or 'split_all' which post-processes)
+      let downloadThread;
       if (item.contentType === 'm3u8') {
         downloadThread = new DownloadM3u8Thread(downloadData);
       } else {
