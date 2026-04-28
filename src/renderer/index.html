@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://*.naver.com https://*.pstatic.net data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
+  <title>Chzzk VOD Downloader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <!-- Custom Title Bar -->
+  <header id="titlebar">
+    <div id="titlebar-drag">
+      <div id="titlebar-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="url(#grad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs><linearGradient id="grad" x1="2" y1="2" x2="22" y2="22"><stop stop-color="#00ffa3"/><stop offset="1" stop-color="#03e1ff"/></linearGradient></defs>
+        </svg>
+      </div>
+      <span id="titlebar-text">Chzzk VOD Downloader</span>
+    </div>
+    <div id="titlebar-controls">
+      <button id="btn-minimize" class="titlebar-btn" title="최소화">
+        <svg width="12" height="12" viewBox="0 0 12 12"><rect y="5" width="12" height="1.5" fill="currentColor"/></svg>
+      </button>
+      <button id="btn-maximize" class="titlebar-btn" title="최대화">
+        <svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+      </button>
+      <button id="btn-close" class="titlebar-btn titlebar-btn-close" title="닫기">
+        <svg width="12" height="12" viewBox="0 0 12 12"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.5"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Tab Navigation -->
+  <nav id="tab-nav">
+    <button class="tab-btn active" data-tab="download">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>다운로드</span>
+    </button>
+    <button class="tab-btn" data-tab="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>검색</span>
+    </button>
+    <button class="tab-btn" data-tab="settings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>설정</span>
+    </button>
+  </nav>
+
+  <!-- Main Content Area -->
+  <main id="content">
+    <!-- Download Tab -->
+    <section id="tab-download" class="tab-content active">
+      <!-- URL Input Bar -->
+      <div id="url-bar">
+        <div id="url-input-wrapper">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <input type="text" id="url-input" placeholder="치지직 VOD 또는 클립 URL을 입력하세요..." autocomplete="off">
+        </div>
+        <button id="btn-fetch" class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>추가</span>
+        </button>
+      </div>
+
+      <!-- Download Path -->
+      <div id="download-path-bar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <input type="text" id="download-path-input" placeholder="다운로드 경로" readonly>
+        <button id="btn-browse" class="btn-ghost" title="폴더 선택">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 19a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2 2h4a2 2 0 0 1 2 2v1M5 19h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2z"/></svg>
+        </button>
+      </div>
+
+      <!-- Status Bar -->
+      <div id="status-bar">
+        <span id="link-status">준비됨</span>
+        <span id="download-count">다운로드: 0/0</span>
+      </div>
+
+      <!-- Queue -->
+      <div id="queue-container">
+        <div id="queue-empty">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <p>VOD URL을 입력하거나 검색 탭에서 추가하세요</p>
+        </div>
+        <div id="queue-list"></div>
+      </div>
+
+      <!-- Control Bar -->
+      <div id="control-bar">
+        <button id="btn-download" class="btn-accent" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <span>다운로드</span>
+        </button>
+        <button id="btn-stop" class="btn-danger" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12"/></svg>
+          <span>중지</span>
+        </button>
+        <button id="btn-clear-finished" class="btn-ghost">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          <span>완료 항목 제거</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Search Tab -->
+    <section id="tab-search" class="tab-content">
+      <div class="coming-soon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <p>Phase 2에서 구현 예정</p>
+      </div>
+    </section>
+
+    <!-- Settings Tab -->
+    <section id="tab-settings" class="tab-content">
+      <div class="settings-panel">
+        <h2 class="settings-title">설정</h2>
+
+        <div class="settings-group">
+          <h3 class="settings-group-title">쿠키 설정</h3>
+          <p class="settings-description">연령 제한 콘텐츠에 접근하려면 네이버 쿠키를 입력하세요.</p>
+          <div class="settings-field">
+            <label for="cookie-nid-aut">NID_AUT</label>
+            <input type="text" id="cookie-nid-aut" class="settings-input" placeholder="NID_AUT 쿠키 값">
+          </div>
+          <div class="settings-field">
+            <label for="cookie-nid-ses">NID_SES</label>
+            <input type="text" id="cookie-nid-ses" class="settings-input" placeholder="NID_SES 쿠키 값">
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3 class="settings-group-title">다운로드 후 동작</h3>
+          <div class="settings-field">
+            <select id="after-download" class="settings-select">
+              <option value="none">없음</option>
+              <option value="sleep">절전 모드</option>
+              <option value="shutdown">시스템 종료</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h3 class="settings-group-title">확장프로그램 서버</h3>
+          <div class="settings-field settings-field-row">
+            <label for="server-enabled">로컬 HTTP 서버</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="server-enabled">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="settings-field">
+            <label for="server-port">포트</label>
+            <input type="number" id="server-port" class="settings-input settings-input-sm" value="36363" min="1024" max="65535">
+          </div>
+        </div>
+
+        <button id="btn-save-settings" class="btn-primary">설정 저장</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="index.js"></script>
+</body>
+</html>
