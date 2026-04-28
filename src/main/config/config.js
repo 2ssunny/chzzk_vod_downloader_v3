@@ -21,7 +21,7 @@ const DEFAULT_CONFIG = {
   language: 'ko_KR',
   localServer: {
     enabled: true,
-    port: 36363,
+    port: 11025,
   },
   remoteConfigUrl: '',
   defaultSegmentInterval: 0,

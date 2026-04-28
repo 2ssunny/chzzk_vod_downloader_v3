@@ -14,11 +14,8 @@
   <!-- Custom Title Bar -->
   <header id="titlebar">
     <div id="titlebar-drag">
-      <div id="titlebar-icon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="url(#grad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <defs><linearGradient id="grad" x1="2" y1="2" x2="22" y2="22"><stop stop-color="#00ffa3"/><stop offset="1" stop-color="#03e1ff"/></linearGradient></defs>
-        </svg>
+      <div id="titlebar-icon" style="display: flex; align-items: center;">
+        <img src="../media/logo.png" width="18" height="18" alt="Logo" style="border-radius: 4px;">
       </div>
       <span id="titlebar-text">Chzzk VOD Downloader</span>
     </div>
@@ -221,12 +218,12 @@
             </label>
           </div>
           <div class="settings-field">
-            <label for="server-port">포트</label>
-            <input type="number" id="server-port" class="settings-input settings-input-sm" value="36363" min="1024" max="65535">
+            <label for="server-port">포트 (기본값: 11025)</label>
+            <input type="number" id="server-port" class="settings-input" value="11025">
           </div>
         </div>
 
-        <button id="btn-save-settings" class="btn-primary">설정 저장</button>
+        <button id="btn-save-settings" class="btn-primary" style="margin-top: var(--sp-lg); width: 100%;">설정 저장</button>
       </div>
     </section>
   </main>

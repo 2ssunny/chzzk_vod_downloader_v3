@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Chzzk VOD Downloader Companion",
+  "version": "1.0.0",
+  "description": "Send Chzzk video/clip URLs directly to the Chzzk VOD Downloader app.",
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://chzzk.naver.com/video/*",
+        "*://chzzk.naver.com/clips/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "host_permissions": [
+    "http://localhost:11025/*",
+    "http://127.0.0.1:11025/*"
+  ]
+}

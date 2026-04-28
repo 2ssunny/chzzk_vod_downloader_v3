@@ -100,6 +100,19 @@ urlInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') fetchContent();
 });
 
+window.electronAPI.onExternalAddUrl((url) => {
+  if (url) {
+    urlInput.value = url;
+    // Switch to Download Tab
+    document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+    document.querySelector('.tab-btn[data-target="tab-download"]').classList.add('active');
+    document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
+    document.getElementById('tab-download').classList.add('active');
+    
+    fetchContent();
+  }
+});
+
 async function fetchContent() {
   const url = urlInput.value.trim();
   if (!url) return;
@@ -405,14 +418,21 @@ async function handleDownloadPause() {
     updateControlButtons();
 
     try {
+      let suffix = '';
+      if (next.splitData && next.splitData.type === 'split_part') {
+        suffix = ` (${next.splitData.start.replace(/:/g, '')}-${next.splitData.end.replace(/:/g, '')})`;
+      }
+
       await window.electronAPI.startDownload({
         id: next.id,
         url: next.vodUrl,
         baseUrl: next.selectedBaseUrl,
         resolution: next.selectedResolution,
-        outputPath: `${downloadPathInput.value}/${sanitizeFilename(next.channelName)} - ${sanitizeFilename(next.title)} ${next.selectedResolution}p.mp4`,
+        outputPath: `${downloadPathInput.value}/${sanitizeFilename(next.channelName)} - ${sanitizeFilename(next.title)} ${next.selectedResolution}p${suffix}.mp4`,
         contentType: next.contentType,
         liveRewindPlaybackJson: next.liveRewindPlaybackJson || null,
+        dashManifestUrl: next.dashManifestUrl || null,
+        splitData: next.splitData || { type: 'none' }
       });
     } catch (err) {
       next.state = 'failed';
@@ -503,7 +523,7 @@ btnSaveSettings.addEventListener('click', async () => {
   state.config.afterDownload = document.getElementById('after-download').value;
   state.config.localServer = {
     enabled: document.getElementById('server-enabled').checked,
-    port: parseInt(document.getElementById('server-port').value) || 36363,
+    port: parseInt(document.getElementById('server-port').value) || 11025,
   };
   
   const apiConfigTypeSelect = document.getElementById('api-config-type');

@@ -31,8 +31,8 @@ function splitVideo(inputPath, chunkDurationMinutes, onProgress) {
     const dir = path.dirname(inputPath);
     const base = path.basename(inputPath, ext);
     
-    // Output pattern: "Original_001.mp4", "Original_002.mp4"
-    const outputPattern = path.join(dir, `${base}_%03d${ext}`);
+    // Output pattern: "Original - 1.mp4", "Original - 2.mp4"
+    const outputPattern = path.join(dir, `${base} - %d${ext}`);
     
     // Total duration for progress tracking
     // We don't have it easily without probing, but we can assume progress is proportional to time if we probe first.
@@ -46,6 +46,7 @@ function splitVideo(inputPath, chunkDurationMinutes, onProgress) {
       '-c', 'copy',
       '-f', 'segment',
       '-segment_time', chunkDurationSeconds.toString(),
+      '-segment_start_number', '1',
       '-reset_timestamps', '1',
       outputPattern
     ];
@@ -68,7 +69,7 @@ function splitVideo(inputPath, chunkDurationMinutes, onProgress) {
         // Find generated files
         try {
           const files = fs.readdirSync(dir);
-          const generated = files.filter(f => f.startsWith(base + '_') && f.match(/_\d{3}\.mp4$/));
+          const generated = files.filter(f => f.startsWith(base + ' - ') && f.match(/ - \d+\.mp4$/));
           resolve(generated.map(f => path.join(dir, f)));
         } catch (e) {
           resolve([]);

@@ -41,4 +41,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('search:channelVideos', channelId, page, size),
   getChannelClips: (channelId, page, size) =>
     ipcRenderer.invoke('search:channelClips', channelId, page, size),
+    
+  // External Integration
+  onExternalAddUrl: (callback) => {
+    ipcRenderer.on('external:add-url', (_, url) => callback(url));
+  },
 });

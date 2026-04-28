@@ -5,9 +5,11 @@ const { fetchContentData } = require('./api/content');
 const { searchChannels, getChannelVideos, getChannelClips } = require('./api/search');
 const { loadEndpoints } = require('./api/remote-config');
 const { DownloadManager } = require('./download/manager');
+const { LocalServer } = require('./http-server');
 
 let mainWindow = null;
 let downloadManager = null;
+let localServer = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -15,7 +17,7 @@ function createWindow() {
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    icon: path.join(__dirname, '../../resources/chzzk.ico'),
+    icon: path.join(__dirname, '../media/logo.png'),
     webPreferences: {
       preload: path.join(__dirname, '../preload/preload.js'),
       contextIsolation: true,
@@ -39,6 +41,13 @@ function createWindow() {
 
   // Initialize download manager with window reference
   downloadManager = new DownloadManager(mainWindow);
+  
+  // Initialize Local Server
+  const cfg = config.loadConfig();
+  localServer = new LocalServer(mainWindow, cfg.localServer?.port || 11025);
+  if (cfg.localServer?.enabled !== false) {
+    localServer.start();
+  }
 }
 
 // ============ IPC Handlers ============
@@ -66,6 +75,13 @@ ipcMain.handle('dialog:openDirectory', async () => {
 ipcMain.handle('config:load', () => config.loadConfig());
 ipcMain.handle('config:save', (_, newConfig) => {
   config.saveConfig(newConfig);
+  
+  if (newConfig.localServer?.enabled !== false) {
+    localServer?.start();
+  } else {
+    localServer?.stop();
+  }
+  
   return true;
 });
 
