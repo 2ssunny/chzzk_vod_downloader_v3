@@ -23,7 +23,7 @@
     "productName": "Chzzk VOD Downloader",
     "win": {
       "target": "nsis",
-      "icon": "resources/icon.ico"
+      "icon": "src/media/logo.png"
     },
     "nsis": {
       "oneClick": false,

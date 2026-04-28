@@ -16,6 +16,12 @@ btn.style.cursor = 'pointer';
 btn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
 btn.style.transition = 'all 0.2s ease';
 
+function updateButtonVisibility() {
+  const href = window.location.href;
+  const isTarget = href.includes('/video/') || href.includes('/clips/');
+  btn.style.display = isTarget ? 'block' : 'none';
+}
+
 btn.addEventListener('mouseenter', () => {
   btn.style.transform = 'translateY(-2px)';
   btn.style.boxShadow = '0 6px 16px rgba(0,0,0,0.4)';
@@ -64,3 +70,16 @@ btn.addEventListener('click', async () => {
 
 // Add to page
 document.body.appendChild(btn);
+
+// SPA URL change detection
+let lastUrl = location.href; 
+new MutationObserver(() => {
+  const url = location.href;
+  if (url !== lastUrl) {
+    lastUrl = url;
+    updateButtonVisibility();
+  }
+}).observe(document, {subtree: true, childList: true});
+
+// Initial check
+updateButtonVisibility();

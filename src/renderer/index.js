@@ -105,7 +105,9 @@ window.electronAPI.onExternalAddUrl((url) => {
     urlInput.value = url;
     // Switch to Download Tab
     document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
-    document.querySelector('.tab-btn[data-target="tab-download"]').classList.add('active');
+    const downloadTabBtn = document.querySelector('.tab-btn[data-tab="download"]');
+    if (downloadTabBtn) downloadTabBtn.classList.add('active');
+    
     document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
     document.getElementById('tab-download').classList.add('active');
     
@@ -119,6 +121,7 @@ async function fetchContent() {
 
   const downloadPath = downloadPathInput.value || '';
   if (!downloadPath) {
+    alert('다운로드 경로를 먼저 설정하세요!');
     showStatus('다운로드 경로를 먼저 설정하세요.', 'warning');
     return;
   }
@@ -135,13 +138,22 @@ async function fetchContent() {
     const result = await window.electronAPI.fetchContent(url, cookies, downloadPath);
 
     if (result.error) {
+      alert(`오류: ${result.error}`);
       showStatus(`오류: ${result.error}`, 'error');
       return;
     }
 
-    openDownloadModal(result);
-    showStatus('옵션을 선택하세요.', 'success');
+    if (url.includes('/clips/')) {
+      // Bypass modal for clips
+      addToQueue(result, { type: 'none' });
+      showStatus('클립이 대기열에 추가되었습니다.', 'success');
+      if (!state.isDownloading) handleDownloadPause();
+    } else {
+      openDownloadModal(result);
+      showStatus('옵션을 선택하세요.', 'success');
+    }
   } catch (err) {
+    alert(`오류: ${err.message}`);
     showStatus(`오류: ${err.message}`, 'error');
   }
 }
@@ -196,6 +208,8 @@ btnModalAdd.addEventListener('click', () => {
   
   addToQueue(pendingDownloadResult, splitData);
   closeDownloadModal();
+  
+  if (!state.isDownloading) handleDownloadPause();
 });
 
 // ============ Queue Management ============
