@@ -317,7 +317,7 @@ async function handleDownloadPause() {
         url: next.vodUrl,
         baseUrl: next.selectedBaseUrl,
         resolution: next.selectedResolution,
-        outputPath: `${downloadPathInput.value}/${next.title} ${next.selectedResolution}p.mp4`,
+        outputPath: `${downloadPathInput.value}/${sanitizeFilename(next.channelName)} - ${sanitizeFilename(next.title)} ${next.selectedResolution}p.mp4`,
         contentType: next.contentType,
         liveRewindPlaybackJson: next.liveRewindPlaybackJson || null,
       });
@@ -478,4 +478,9 @@ function formatDate(dateStr) {
   } catch {
     return dateStr;
   }
+}
+
+function sanitizeFilename(name) {
+  if (!name) return 'Unknown';
+  return name.replace(/[\\/:*?"<>|\n]/g, '').trim() || 'Unknown';
 }
