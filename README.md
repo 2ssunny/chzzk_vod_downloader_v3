@@ -39,7 +39,7 @@
 4. 좌측 상단의 **[압축해제된 확장 프로그램을 로드합니다]** (Load unpacked) 버튼을 클릭합니다.
 5. 앞서 압축을 해제한 `extension` 폴더를 선택하면 브라우저 우측 상단에 로고 아이콘이 추가되며 설치가 완료됩니다!
 6. *참고: 앱 설정에서 **'로컬 서버 켜기(포트: 11025)'**가 체크되어 있어야 확장프로그램과 정상적으로 통신합니다.*
-7.Firefox에서도 지원합니다. 주소창에 'about:debugging#/runtime/this-firefox'을 입력하고 임시 확장 기능 로드... (Load Temporary Add-on...)를 클릭한 후, manifest.json을 선택하면 됩니다.
+7. Firefox에서도 지원합니다. 주소창에 'about:debugging#/runtime/this-firefox'을 입력하고 임시 확장 기능 로드... (Load Temporary Add-on...)를 클릭한 후, manifest.json을 선택하면 됩니다.
 ---
 
 ## 📖 사용 가이드
