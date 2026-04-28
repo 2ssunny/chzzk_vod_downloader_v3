@@ -2,6 +2,8 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const config = require('./config/config');
 const { fetchContentData } = require('./api/content');
+const { searchChannels, getChannelVideos, getChannelClips } = require('./api/search');
+const { loadEndpoints } = require('./api/remote-config');
 const { DownloadManager } = require('./download/manager');
 
 let mainWindow = null;
@@ -77,9 +79,38 @@ ipcMain.handle('content:fetch', async (_, url, cookies, downloadPath) => {
   }
 });
 
+// Search
+ipcMain.handle('search:channels', async (_, keyword, offset, size) => {
+  try {
+    return await searchChannels(keyword, offset, size);
+  } catch (err) {
+    return { error: err.message, channels: [] };
+  }
+});
+
+ipcMain.handle('search:channelVideos', async (_, channelId, page, size) => {
+  try {
+    return await getChannelVideos(channelId, page, size);
+  } catch (err) {
+    return { error: err.message, videos: [] };
+  }
+});
+
+ipcMain.handle('search:channelClips', async (_, channelId, page, size) => {
+  try {
+    return await getChannelClips(channelId, page, size);
+  } catch (err) {
+    return { error: err.message, clips: [] };
+  }
+});
+
 // ============ App lifecycle ============
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Load remote API config on startup
+  const appConfig = config.loadConfig();
+  await loadEndpoints(appConfig.remoteConfigUrl || '');
+
   createWindow();
 });
 

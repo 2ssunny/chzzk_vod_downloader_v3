@@ -110,9 +110,62 @@
 
     <!-- Search Tab -->
     <section id="tab-search" class="tab-content">
-      <div class="coming-soon">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <p>Phase 2에서 구현 예정</p>
+      <!-- Search Bar -->
+      <div id="search-bar">
+        <div id="search-input-wrapper">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="search-input" placeholder="스트리머 채널명을 검색하세요..." autocomplete="off">
+        </div>
+        <button id="btn-search" class="btn-primary">
+          <span>검색</span>
+        </button>
+      </div>
+
+      <!-- Search Content Area -->
+      <div id="search-content">
+        <!-- Channel List View (default) -->
+        <div id="search-channel-list" class="search-view active">
+          <div id="search-empty" class="search-placeholder">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <p>채널을 검색해보세요</p>
+          </div>
+          <div id="search-loading" class="search-placeholder" style="display:none">
+            <div class="spinner"></div>
+            <p>검색 중...</p>
+          </div>
+          <div id="channel-results"></div>
+          <div id="search-load-more" style="display:none">
+            <button id="btn-load-more" class="btn-ghost">더 보기</button>
+          </div>
+        </div>
+
+        <!-- Channel Detail View -->
+        <div id="search-channel-detail" class="search-view">
+          <div id="channel-detail-header">
+            <button id="btn-back" class="btn-ghost">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              <span>뒤로</span>
+            </button>
+            <div id="channel-detail-info">
+              <img id="channel-detail-img" class="channel-detail-avatar" src="" alt="">
+              <span id="channel-detail-name" class="channel-detail-channel-name"></span>
+            </div>
+            <div id="content-type-tabs">
+              <button class="content-tab-btn active" data-content-type="videos">다시보기</button>
+              <button class="content-tab-btn" data-content-type="clips">클립</button>
+            </div>
+          </div>
+          <div id="content-list-loading" class="search-placeholder" style="display:none">
+            <div class="spinner"></div>
+            <p>불러오는 중...</p>
+          </div>
+          <div id="content-list"></div>
+          <div id="content-pagination" style="display:none">
+            <button id="btn-prev-page" class="btn-ghost" disabled>← 이전</button>
+            <span id="page-info"></span>
+            <button id="btn-next-page" class="btn-ghost">다음 →</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -166,5 +219,6 @@
   </main>
 
   <script src="index.js"></script>
+  <script src="search.js"></script>
 </body>
 </html>
