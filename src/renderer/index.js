@@ -59,6 +59,21 @@ async function init() {
   document.getElementById('after-download').value = state.config.afterDownload || 'none';
   document.getElementById('server-enabled').checked = state.config.localServer?.enabled ?? true;
   document.getElementById('server-port').value = state.config.localServer?.port || 36363;
+  const apiConfigTypeSelect = document.getElementById('api-config-type');
+  const remoteUrlInput = document.getElementById('remote-config-url');
+  
+  if (apiConfigTypeSelect && remoteUrlInput) {
+    apiConfigTypeSelect.value = state.config.apiConfigType || 'builtin';
+    remoteUrlInput.value = state.config.remoteConfigUrl || '';
+    
+    // Initial display
+    remoteUrlInput.style.display = apiConfigTypeSelect.value === 'custom' ? 'block' : 'none';
+    
+    // Change listener
+    apiConfigTypeSelect.addEventListener('change', (e) => {
+      remoteUrlInput.style.display = e.target.value === 'custom' ? 'block' : 'none';
+    });
+  }
 
   renderFullQueue();
 }
@@ -412,6 +427,13 @@ btnSaveSettings.addEventListener('click', async () => {
     enabled: document.getElementById('server-enabled').checked,
     port: parseInt(document.getElementById('server-port').value) || 36363,
   };
+  
+  const apiConfigTypeSelect = document.getElementById('api-config-type');
+  const remoteUrlInput = document.getElementById('remote-config-url');
+  if (apiConfigTypeSelect && remoteUrlInput) {
+    state.config.apiConfigType = apiConfigTypeSelect.value;
+    state.config.remoteConfigUrl = remoteUrlInput.value.trim();
+  }
 
   await window.electronAPI.saveConfig(state.config);
   showStatus('설정이 저장되었습니다.', 'success');

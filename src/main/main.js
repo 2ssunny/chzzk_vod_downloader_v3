@@ -109,7 +109,7 @@ ipcMain.handle('search:channelClips', async (_, channelId, page, size) => {
 app.whenReady().then(async () => {
   // Load remote API config on startup
   const appConfig = config.loadConfig();
-  await loadEndpoints(appConfig.remoteConfigUrl || '');
+  await loadEndpoints(appConfig);
 
   createWindow();
 });

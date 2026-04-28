@@ -94,6 +94,20 @@ contentList.addEventListener('click', (e) => {
   document.querySelector('.tab-btn[data-tab="download"]').click();
 });
 
+// Event Delegation for Channel Cards
+channelResults.addEventListener('click', (e) => {
+  const card = e.target.closest('.channel-card');
+  if (!card) return;
+
+  const channelId = card.dataset.channelId;
+  const channelName = card.dataset.channelName;
+  const channelImg = card.dataset.channelImg;
+
+  if (channelId) {
+    openChannelDetail(channelId, channelName, channelImg);
+  }
+});
+
 // ============ Search Functions ============
 async function performChannelSearch(isNewSearch = true) {
   if (searchState.isLoading) return;
@@ -136,7 +150,7 @@ async function performChannelSearch(isNewSearch = true) {
     
     // Render channels
     const newHtml = result.channels.map(ch => `
-      <div class="channel-card" onclick="openChannelDetail('${ch.channelId}', '${escapeAttr(ch.channelName)}', '${escapeAttr(ch.channelImageUrl)}')">
+      <div class="channel-card" data-channel-id="${ch.channelId}" data-channel-name="${escapeAttr(ch.channelName)}" data-channel-img="${escapeAttr(ch.channelImageUrl)}">
         <img class="channel-card-avatar" src="${ch.channelImageUrl || ''}" alt="" onerror="this.src=''">
         <div class="channel-card-info">
           <div class="channel-card-name">
@@ -170,8 +184,8 @@ async function performChannelSearch(isNewSearch = true) {
   }
 }
 
-// Global exposure for onclick
-window.openChannelDetail = function(channelId, channelName, channelImageUrl) {
+// Open Channel Detail View
+function openChannelDetail(channelId, channelName, channelImageUrl) {
   searchState.currentChannel = { id: channelId, name: channelName, img: channelImageUrl };
   
   // Setup UI

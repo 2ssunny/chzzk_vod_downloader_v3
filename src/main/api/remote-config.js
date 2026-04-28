@@ -23,12 +23,21 @@ const BUILTIN_ENDPOINTS = {
 
 /**
  * Load endpoints from remote server, cache, or builtin defaults
- * @param {string} remoteUrl - URL of the user's config server
+ * @param {object} appConfig - App configuration object
  * @returns {Promise<object>} endpoint map
  */
-async function loadEndpoints(remoteUrl) {
+async function loadEndpoints(appConfig) {
+  const apiConfigType = appConfig.apiConfigType || 'builtin';
+  let remoteUrl = null;
+
+  if (apiConfigType === 'ssunny') {
+    remoteUrl = 'https://api.ssunny.me/util/chzzk_api';
+  } else if (apiConfigType === 'custom') {
+    remoteUrl = appConfig.remoteConfigUrl || '';
+  }
+
   // 1. Try remote server
-  if (remoteUrl) {
+  if (remoteUrl && apiConfigType !== 'builtin') {
     try {
       const response = await fetch(remoteUrl, { signal: AbortSignal.timeout(5000) });
       if (response.ok) {
@@ -45,12 +54,14 @@ async function loadEndpoints(remoteUrl) {
     }
   }
 
-  // 2. Try cached version
-  const cached = loadCache();
-  if (cached) {
-    client.setEndpoints(cached);
-    console.log('[RemoteConfig] Using cached endpoints');
-    return cached;
+  // 2. Try cached version (only if a remote was intended)
+  if (apiConfigType !== 'builtin') {
+    const cached = loadCache();
+    if (cached) {
+      client.setEndpoints(cached);
+      console.log('[RemoteConfig] Using cached endpoints');
+      return cached;
+    }
   }
 
   // 3. Fallback to built-in defaults
