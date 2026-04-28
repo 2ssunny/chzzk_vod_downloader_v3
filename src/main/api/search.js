@@ -101,7 +101,7 @@ async function getChannelClips(channelId, page = 0, size = 20) {
   const items = content.data || [];
 
   const clips = items.map((item) => ({
-    clipNo: item.clipNo || item.clipInfoNo,
+    clipNo: item.clipUID || item.clipId || item.clipNo || item.clipInfoNo,
     clipTitle: (item.clipTitle || 'Untitled').replace(/[\\/:\*\?"<>|\n]/g, ''),
     thumbnailImageUrl: item.thumbnailImageUrl || '',
     clipCreatedDate: item.createdDate || item.clipCreatedDate || '',
