@@ -39,6 +39,12 @@ function createWindow() {
     downloadManager = null;
   });
 
+  // Open target="_blank" links in default browser
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    require('electron').shell.openExternal(url);
+    return { action: 'deny' };
+  });
+
   // Initialize download manager with window reference
   downloadManager = new DownloadManager(mainWindow);
   
