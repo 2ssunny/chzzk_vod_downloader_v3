@@ -53,6 +53,7 @@ class DownloadManager {
       resolution: item.resolution,
       contentType: item.contentType,
       liveRewindPlaybackJson: item.liveRewindPlaybackJson,
+      splitData: item.splitData,
       state: DownloadState.RUNNING,
 
       // Progress tracking

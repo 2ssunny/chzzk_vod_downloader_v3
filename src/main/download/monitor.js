@@ -89,7 +89,13 @@ class MonitorThread {
 
     if (this.data.splitData && this.data.splitData.type === 'split_part') {
       speedStr = '구간 다운로드 중...';
-      remainTime = '계산 불가';
+      if (progress > 0 && progress < 100) {
+        const elapsedSec = (Date.now() - this.startTime) / 1000;
+        const remainSec = (elapsedSec / (progress / 100)) - elapsedSec;
+        remainTime = this.formatTime(remainSec);
+      } else {
+        remainTime = '--:--:--';
+      }
     }
 
     if (this.data.state === 'running' || this.data.state === 'downloading') {
@@ -104,7 +110,7 @@ class MonitorThread {
                 totalSize /
                 (1024 * 1024)
               ).toFixed(1)}MB`
-            : this.data.splitData && this.data.splitData.type === 'split_part' ? 'ffmpeg 다운로드' : '계산 중...',
+            : this.data.splitData && this.data.splitData.type === 'split_part' ? '구간 추출 중...' : '계산 중...',
       });
     }
   }

@@ -90,6 +90,44 @@ async function init() {
   }
 
   renderFullQueue();
+  
+  // Fetch App Version
+  try {
+    const version = await window.electronAPI.getAppVersion();
+    document.getElementById('app-version-text').textContent = `v${version}`;
+  } catch (e) {
+    document.getElementById('app-version-text').textContent = '버전 알 수 없음';
+  }
+  
+  const btnCheckUpdate = document.getElementById('btn-check-update');
+  if (btnCheckUpdate) {
+    btnCheckUpdate.addEventListener('click', async () => {
+      const statusText = document.getElementById('update-status-text');
+      statusText.textContent = '업데이트 확인 중...';
+      statusText.style.color = 'var(--text-muted)';
+      try {
+        const res = await fetch('https://api.github.com/repos/2ssunny/chzzk_vod_downloader_v3/releases/latest');
+        if (!res.ok) throw new Error('API fetch failed');
+        const data = await res.json();
+        const latestVersion = data.tag_name;
+        const currentVersion = await window.electronAPI.getAppVersion();
+        
+        const cleanLatest = latestVersion.replace('v', '');
+        const cleanCurrent = currentVersion.replace('v', '');
+        
+        if (cleanLatest !== cleanCurrent) {
+          statusText.innerHTML = `새로운 버전이 있습니다! (<a href="${data.html_url}" target="_blank" style="color: var(--accent); text-decoration: underline;">${latestVersion} 확인</a>)`;
+          statusText.style.color = 'var(--accent)';
+        } else {
+          statusText.textContent = '최신 버전을 사용 중입니다.';
+          statusText.style.color = 'var(--success)';
+        }
+      } catch (e) {
+        statusText.textContent = '업데이트 확인 실패';
+        statusText.style.color = 'var(--danger)';
+      }
+    });
+  }
 }
 
 init();

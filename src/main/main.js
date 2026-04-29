@@ -52,6 +52,8 @@ function createWindow() {
 
 // ============ IPC Handlers ============
 
+ipcMain.handle('app:version', () => app.getVersion());
+
 // Window controls
 ipcMain.on('window:minimize', () => mainWindow?.minimize());
 ipcMain.on('window:maximize', () => {

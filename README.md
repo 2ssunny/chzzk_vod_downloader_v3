@@ -96,3 +96,4 @@ npm run build
 
 - 해당 프로그램은 Google Antigravity (Gemini 및 Claude)를 사용하여 제작하였습니다. (~찬양하라~)
 - 해당 프로젝트에 대한 건의사항, 문제점이 있다면 Issue 탭을 이용해 주세요.
+- 이 프로그램은 치지직의 공식 프로그램이 아닙니다. "치지직" 혹은 "Chzzk"은 NAVER Corp.의 등록 상표입니다.

@@ -1,7 +1,7 @@
 {
   "name": "chzzk-vod-downloader",
-  "version": "3.0.0",
-  "description": "Chzzk VOD/Clip downloader with search, segment download, and browser extension support",
+  "version": "3.0.2",
+  "description": "Chzzk VOD & Clip Downloader via local http server",
   "main": "src/main/main.js",
   "scripts": {
     "dev": "electron .",

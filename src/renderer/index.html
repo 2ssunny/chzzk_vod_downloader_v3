@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://*.naver.com https://*.pstatic.net data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://api.github.com; img-src 'self' https://*.naver.com https://*.pstatic.net data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com;">
   <title>Chzzk VOD Downloader</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -223,7 +223,23 @@
           </div>
         </div>
 
+        <div class="settings-group">
+          <h3 class="settings-group-title">버전 정보</h3>
+          <div class="settings-field settings-field-row">
+            <span id="app-version-text" style="color: var(--text-primary); font-weight: 500;">버전 확인 중...</span>
+            <button id="btn-check-update" class="btn-ghost" style="font-size: 11px; padding: 4px 8px;">업데이트 확인</button>
+          </div>
+          <p id="update-status-text" class="settings-description" style="margin-top: 8px; margin-bottom: 0;"></p>
+        </div>
+
         <button id="btn-save-settings" class="btn-primary" style="margin-top: var(--sp-lg); width: 100%;">설정 저장</button>
+
+        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border); text-align: center;">
+          <p style="font-size: 11px; color: var(--text-muted); line-height: 1.5; margin: 0;">
+            이 프로그램은 치지직의 공식 프로그램이 아닙니다.<br>
+            "치지직" 혹은 "Chzzk" 은 NAVER Corp.의 등록 상표입니다.
+          </p>
+        </div>
       </div>
     </section>
   </main>
