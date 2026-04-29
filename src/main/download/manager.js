@@ -76,7 +76,7 @@ class DownloadManager {
     try {
       // Handle 'split_part' directly with ffmpeg
       if (item.splitData && item.splitData.type === 'split_part') {
-        const manifestUrl = item.dashManifestUrl || item.baseUrl;
+        const manifestUrl = item.baseUrl;
         
         // Start monitor for UI (ffmpeg will send percent)
         this.monitor = new MonitorThread(downloadData, (progressData) => {
@@ -95,6 +95,17 @@ class DownloadManager {
             }
           }
         );
+        // Chunk the extracted segment if requested
+        if (item.splitData.chunkDuration) {
+          this.sendProgress({ id: downloadData.id, speed: '구간 분할 중...' });
+          try {
+            await splitVideo(downloadData.outputPath, item.splitData.chunkDuration, (prog) => {
+              this.sendProgress({ id: downloadData.id, speed: `구간 분할 중... (${prog.output})` });
+            });
+          } catch (e) {
+            console.error('Segment chunking failed:', e);
+          }
+        }
         
         const downloadTime = this.monitor.getDownloadTime();
         this.monitor.stop();

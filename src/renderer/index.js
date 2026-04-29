@@ -147,7 +147,6 @@ async function fetchContent() {
       // Bypass modal for clips
       addToQueue(result, { type: 'none' });
       showStatus('클립이 대기열에 추가되었습니다.', 'success');
-      if (!state.isDownloading) handleDownloadPause();
     } else {
       openDownloadModal(result);
       showStatus('옵션을 선택하세요.', 'success');
@@ -193,6 +192,21 @@ splitTypeSelect.addEventListener('change', (e) => {
   splitPartOptions.style.display = val === 'split_part' ? 'block' : 'none';
 });
 
+function formatTimeInput(e) {
+  let val = e.target.value.replace(/[^0-9]/g, '');
+  if (val.length > 6) val = val.slice(0, 6);
+  
+  let formatted = '';
+  if (val.length > 0) formatted += val.slice(0, 2);
+  if (val.length > 2) formatted += ':' + val.slice(2, 4);
+  if (val.length > 4) formatted += ':' + val.slice(4, 6);
+  
+  e.target.value = formatted;
+}
+
+splitStartInput.addEventListener('input', formatTimeInput);
+splitEndInput.addEventListener('input', formatTimeInput);
+
 btnModalAdd.addEventListener('click', () => {
   if (!pendingDownloadResult) return;
   
@@ -204,12 +218,14 @@ btnModalAdd.addEventListener('click', () => {
   } else if (splitType === 'split_part') {
     splitData.start = splitStartInput.value.trim();
     splitData.end = splitEndInput.value.trim();
+    const chunkMin = parseInt(document.getElementById('split-part-chunk').value);
+    if (chunkMin > 0) {
+      splitData.chunkDuration = chunkMin;
+    }
   }
   
   addToQueue(pendingDownloadResult, splitData);
   closeDownloadModal();
-  
-  if (!state.isDownloading) handleDownloadPause();
 });
 
 // ============ Queue Management ============

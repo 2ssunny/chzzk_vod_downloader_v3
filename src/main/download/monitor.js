@@ -77,20 +77,36 @@ class MonitorThread {
         remainTime = this.formatTime(remainSec);
       }
     }
-
     // Format speed
-    const speed = this.formatSpeed(speedBps);
+    let speedStr = '';
+    if (speedBps > 1024 * 1024) {
+      speedStr = `${(speedBps / (1024 * 1024)).toFixed(1)} MB/s`;
+    } else if (speedBps > 1024) {
+      speedStr = `${(speedBps / 1024).toFixed(1)} KB/s`;
+    } else {
+      speedStr = `${speedBps} B/s`;
+    }
 
-    // Format downloaded size
-    const downloadedSize = this.formatSize(downloaded);
+    if (this.data.splitData && this.data.splitData.type === 'split_part') {
+      speedStr = '구간 다운로드 중...';
+      remainTime = '계산 불가';
+    }
 
-    this.onProgress({
-      id: this.data.id,
-      progress,
-      speed,
-      remainTime,
-      downloadedSize,
-    });
+    if (this.data.state === 'running' || this.data.state === 'downloading') {
+      this.onProgress({
+        id: this.data.id,
+        progress,
+        speed: speedStr,
+        remainTime,
+        downloadedSize:
+          totalSize > 0
+            ? `${(downloaded / (1024 * 1024)).toFixed(1)}MB / ${(
+                totalSize /
+                (1024 * 1024)
+              ).toFixed(1)}MB`
+            : this.data.splitData && this.data.splitData.type === 'split_part' ? 'ffmpeg 다운로드' : '계산 중...',
+      });
+    }
   }
 
   getDownloadTime() {
