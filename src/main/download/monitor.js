@@ -41,16 +41,16 @@ class MonitorThread {
 
     // Calculate progress percentage
     let progress = 0;
-    if (this.data.splitData && this.data.splitData.type === 'split_part') {
-      progress = this.data.completedProgress || 0;
-    } else if (this.data.contentType === 'm3u8') {
-      // For m3u8, progress is based on completed segments
+    if (this.data.contentType === 'm3u8') {
+      // For m3u8 (including split_part), progress is based on completed segments
       progress =
         this.data.totalRanges > 0
           ? Math.floor(
               (this.data.completedThreads / this.data.totalRanges) * 100
             )
           : 0;
+    } else if (this.data.splitData && this.data.splitData.type === 'split_part') {
+      progress = this.data.completedProgress || 0;
     } else {
       progress = totalSize > 0 ? Math.floor((downloaded / totalSize) * 100) : 0;
     }
@@ -87,7 +87,7 @@ class MonitorThread {
       speedStr = `${speedBps} B/s`;
     }
 
-    if (this.data.splitData && this.data.splitData.type === 'split_part') {
+    if (this.data.splitData && this.data.splitData.type === 'split_part' && this.data.contentType !== 'm3u8') {
       speedStr = '구간 다운로드 중...';
       if (progress > 0 && progress < 100) {
         const elapsedSec = (Date.now() - this.startTime) / 1000;
@@ -110,7 +110,9 @@ class MonitorThread {
                 totalSize /
                 (1024 * 1024)
               ).toFixed(1)}MB`
-            : this.data.splitData && this.data.splitData.type === 'split_part' ? '구간 추출 중...' : '계산 중...',
+            : this.data.contentType === 'm3u8'
+              ? `${this.data.completedThreads || 0} / ${this.data.totalRanges || '?'} 세그먼트`
+              : this.data.splitData && this.data.splitData.type === 'split_part' ? '구간 추출 중...' : '계산 중...',
       });
     }
   }

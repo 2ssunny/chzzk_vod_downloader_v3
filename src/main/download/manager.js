@@ -4,10 +4,12 @@
  */
 
 const { ipcMain } = require('electron');
+const fs = require('fs');
 const { DownloadThread } = require('./download');
 const { DownloadM3u8Thread } = require('./download-m3u8');
 const { MonitorThread } = require('./monitor');
 const { splitVideo, downloadSegment } = require('./ffmpeg');
+const { getVideoM3u8BaseUrl } = require('../api/content');
 
 const DownloadState = {
   WAITING: 'waiting',
@@ -61,8 +63,8 @@ class DownloadManager {
       totalDownloadedSize: 0,
       startTime: Date.now(),
       endTime: 0,
-      adjustThreads: 4,
-      maxThreads: 4,
+      adjustThreads: 16,
+      maxThreads: 16,
       completedThreads: 0,
       failedThreads: 0,
       totalRanges: 0,
@@ -75,20 +77,21 @@ class DownloadManager {
     this.currentDownload = downloadData;
 
     try {
-      // Handle 'split_part' directly with ffmpeg
-      if (item.splitData && item.splitData.type === 'split_part') {
-        const manifestUrl = item.baseUrl;
+      // Handle 'split_part' for DASH/MP4 directly with ffmpeg
+      // M3U8 split_part falls through to normal M3U8 flow — DownloadM3u8Thread handles filtering via splitData
+      if (item.splitData && item.splitData.type === 'split_part' && item.contentType !== 'm3u8') {
         
-        // Start monitor for UI (ffmpeg will send percent)
+        // Start monitor for UI
         this.monitor = new MonitorThread(downloadData, (progressData) => {
           this.sendProgress(progressData);
         });
         this.monitor.start();
         
+        // DASH/MP4: ffmpeg can access the URL directly
         await downloadSegment(
-          manifestUrl, 
-          item.splitData.start, 
-          item.splitData.end, 
+          item.baseUrl,
+          item.splitData.start,
+          item.splitData.end,
           downloadData.outputPath,
           (prog) => {
             if (prog.percent !== undefined) {
@@ -96,6 +99,7 @@ class DownloadManager {
             }
           }
         );
+        
         // Chunk the extracted segment if requested
         if (item.splitData.chunkDuration) {
           this.sendProgress({ id: downloadData.id, speed: '구간 분할 중...' });

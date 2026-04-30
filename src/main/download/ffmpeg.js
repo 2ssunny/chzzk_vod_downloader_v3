@@ -104,24 +104,43 @@ function downloadSegment(url, startTime, endTime, outputPath, onProgress) {
     
     const ffmpegPath = ffmpegStatic.replace('app.asar', 'app.asar.unpacked');
     
-    // Add User-Agent header for remote streams
     const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
     
-    const args = [
-      '-headers', `User-Agent: ${userAgent}\r\n`,
-      '-ss', startTime,
-      '-i', url,
-      '-t', duration.toString(),
-      '-c', 'copy',
-      '-y', // Overwrite
-      outputPath
-    ];
+    const isM3u8 = url.includes('.m3u8') || url.includes('/hls/');
+    
+    let args;
+    if (isM3u8) {
+      // For M3U8/HLS: place -ss AFTER -i (output seeking, more reliable)
+      // Use -to for absolute end time position
+      args = [
+        '-headers', `User-Agent: ${userAgent}\r\n`,
+        '-i', url,
+        '-ss', startTime,
+        '-to', endTime,
+        '-c', 'copy',
+        '-y',
+        outputPath
+      ];
+    } else {
+      // For DASH/MP4: place -ss BEFORE -i (input seeking, faster)
+      args = [
+        '-headers', `User-Agent: ${userAgent}\r\n`,
+        '-ss', startTime,
+        '-i', url,
+        '-t', duration.toString(),
+        '-c', 'copy',
+        '-y',
+        outputPath
+      ];
+    }
     
     const proc = spawn(ffmpegPath, args);
     let lastPercent = 0;
+    let stderrLog = '';
     
     proc.stderr.on('data', (data) => {
       const output = data.toString();
+      stderrLog += output;
       const timeMatch = output.match(/time=(\d+):(\d+):(\d+\.\d+)/);
       if (timeMatch && onProgress) {
         const h = parseInt(timeMatch[1], 10);
@@ -129,10 +148,11 @@ function downloadSegment(url, startTime, endTime, outputPath, onProgress) {
         const s = parseFloat(timeMatch[3]);
         const currentSec = h * 3600 + m * 60 + s;
         
-        let percent = Math.floor((currentSec / duration) * 100);
+        // For M3U8 with output seeking, currentSec is absolute position
+        const progressSec = isM3u8 ? (currentSec - startSec) : currentSec;
+        let percent = Math.floor((Math.max(0, progressSec) / duration) * 100);
         if (percent > 100) percent = 100;
         
-        // Only trigger update if changed significantly
         if (percent > lastPercent) {
           lastPercent = percent;
           onProgress({ percent });
@@ -144,7 +164,8 @@ function downloadSegment(url, startTime, endTime, outputPath, onProgress) {
       if (code === 0) {
         resolve();
       } else {
-        reject(new Error(`ffmpeg segment download failed with code ${code}`));
+        console.error('[ffmpeg stderr]', stderrLog.slice(-500));
+        reject(new Error(`ffmpeg 구간 다운로드 실패 (code ${code})`));
       }
     });
     

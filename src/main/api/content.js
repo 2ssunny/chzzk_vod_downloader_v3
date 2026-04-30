@@ -177,10 +177,9 @@ async function getVideoM3u8BaseUrl(jsonStr, resolution) {
   for (let i = 0; i < lines.length; i++) {
     if (resolutionPattern.test(lines[i])) {
       const relativePath = lines[i + 1].trim();
-      // Resolve relative URL
-      const baseUrlParts = path.split('/');
-      baseUrlParts.pop();
-      const baseUrl = baseUrlParts.join('/') + '/' + relativePath;
+      // Resolve relative URL using standard URL API
+      // (naive split('/') breaks when query params contain '/' like acl=*/kr)
+      const baseUrl = new URL(relativePath, path).href;
       return baseUrl;
     }
   }

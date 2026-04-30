@@ -39,7 +39,7 @@ class DownloadM3u8Thread extends EventEmitter {
       // Fetch m3u8 playlist
       const playlistText = await client.fetchText(this.data.baseUrl);
       const lines = playlistText.split('\n');
-      const segments = lines.filter((l) => l.trim() && !l.startsWith('#'));
+      let segments = lines.filter((l) => l.trim() && !l.startsWith('#'));
 
       // Find init segment
       let initSegmentUri = null;
@@ -48,6 +48,41 @@ class DownloadM3u8Thread extends EventEmitter {
           const match = line.match(/URI="([^"]+)"/);
           if (match) initSegmentUri = match[1];
         }
+      }
+
+      // Filter segments by time range if split_part is requested
+      if (this.data.splitData && this.data.splitData.type === 'split_part') {
+        const startSec = this.parseTime(this.data.splitData.start);
+        const endSec = this.parseTime(this.data.splitData.end);
+        
+        let currentTime = 0;
+        const filteredSegments = [];
+        let segIdx = 0;
+        
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].startsWith('#EXTINF:')) {
+            const durationMatch = lines[i].match(/#EXTINF:([\d.]+)/);
+            const segDuration = durationMatch ? parseFloat(durationMatch[1]) : 0;
+            const segUrl = lines[i + 1]?.trim();
+            
+            if (segUrl && !segUrl.startsWith('#')) {
+              const segStart = currentTime;
+              const segEnd = currentTime + segDuration;
+              
+              if (segEnd > startSec && segStart < endSec) {
+                filteredSegments.push(segUrl);
+              }
+              currentTime = segEnd;
+              segIdx++;
+            }
+          }
+        }
+        
+        if (filteredSegments.length === 0) {
+          throw new Error('해당 구간에 세그먼트가 없습니다.');
+        }
+        
+        segments = filteredSegments;
       }
 
       this.data.totalRanges = segments.length;
@@ -217,9 +252,7 @@ class DownloadM3u8Thread extends EventEmitter {
 
   resolveUrl(base, relative) {
     if (relative.startsWith('http')) return relative;
-    const parts = base.split('/');
-    parts.pop();
-    return parts.join('/') + '/' + relative;
+    return new URL(relative, base).href;
   }
 
   updateTotalProgress() {
@@ -237,6 +270,13 @@ class DownloadM3u8Thread extends EventEmitter {
 
   sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  parseTime(timeStr) {
+    const parts = timeStr.split(':').map(Number);
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    return Number(timeStr) || 0;
   }
 }
 
