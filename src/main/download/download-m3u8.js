@@ -5,6 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { pipeline } = require('stream/promises');
 const { EventEmitter } = require('events');
 const { getVideoM3u8BaseUrl, getVideoInfo, extractContentNo } = require('../api/content');
 const { client } = require('../api/client');
@@ -57,7 +58,6 @@ class DownloadM3u8Thread extends EventEmitter {
         
         let currentTime = 0;
         const filteredSegments = [];
-        let segIdx = 0;
         
         for (let i = 0; i < lines.length; i++) {
           if (lines[i].startsWith('#EXTINF:')) {
@@ -73,7 +73,6 @@ class DownloadM3u8Thread extends EventEmitter {
                 filteredSegments.push(segUrl);
               }
               currentTime = segEnd;
-              segIdx++;
             }
           }
         }
@@ -116,6 +115,11 @@ class DownloadM3u8Thread extends EventEmitter {
         // Merge segments
         this.data.merging = true;
         await this.mergeSegments();
+
+        // For split_part: remap timestamps so duration shows correctly
+        if (this.data.splitData && this.data.splitData.type === 'split_part') {
+          await this.remapTimestamps();
+        }
 
         // Clean up temp
         fs.rmSync(this.tempDir, { recursive: true, force: true });
@@ -184,11 +188,13 @@ class DownloadM3u8Thread extends EventEmitter {
 
       const reader = response.body.getReader();
       const filePath = path.join(this.tempDir, `${String(index + 1).padStart(width, '0')}.m4v`);
-      const chunks = [];
+      // Stream directly to disk instead of accumulating in memory
+      const writeStream = fs.createWriteStream(filePath);
 
       while (true) {
         if (this.aborted || this.data.state === 'waiting') {
           reader.cancel();
+          writeStream.destroy();
           break;
         }
 
@@ -199,15 +205,16 @@ class DownloadM3u8Thread extends EventEmitter {
         const { done, value } = await reader.read();
         if (done) break;
 
-        chunks.push(value);
+        writeStream.write(value);
         downloadedSize += value.length;
         this.data.threadsProgress[index] = downloadedSize;
         this.updateTotalProgress();
       }
 
-      // Write file
+      // Finalize file
       if (!this.aborted && this.data.state !== 'waiting') {
-        fs.writeFileSync(filePath, Buffer.concat(chunks));
+        writeStream.end();
+        await new Promise((resolve) => writeStream.on('finish', resolve));
         this.data.completedThreads++;
         this.data.completedProgress += downloadedSize;
         this.data.threadsProgress[index] = 0;
@@ -229,9 +236,14 @@ class DownloadM3u8Thread extends EventEmitter {
         await this.sleep(100);
       }
 
+      // Stream each segment file to output (no memory accumulation)
       const filePath = path.join(this.tempDir, file);
-      const content = fs.readFileSync(filePath);
-      writeStream.write(content);
+      await new Promise((resolve, reject) => {
+        const readStream = fs.createReadStream(filePath);
+        readStream.on('error', reject);
+        readStream.on('end', resolve);
+        readStream.pipe(writeStream, { end: false });
+      });
 
       // Remove segment after merge
       try { fs.unlinkSync(filePath); } catch (_) {}
@@ -239,6 +251,54 @@ class DownloadM3u8Thread extends EventEmitter {
 
     writeStream.end();
     await new Promise((resolve) => writeStream.on('finish', resolve));
+  }
+
+  /**
+   * Remap timestamps using ffmpeg so split_part files show correct duration
+   * Instead of showing the original stream's absolute timestamps
+   */
+  async remapTimestamps() {
+    const { spawn } = require('child_process');
+    const ffmpegStatic = require('ffmpeg-static');
+    const ffmpegPath = ffmpegStatic.replace('app.asar', 'app.asar.unpacked');
+
+    const tempOutput = this.data.outputPath.replace(/\.mp4$/i, '_remux.mp4');
+
+    return new Promise((resolve, reject) => {
+      const args = [
+        '-i', this.data.outputPath,
+        '-c', 'copy',
+        '-avoid_negative_ts', 'make_zero',
+        '-movflags', '+faststart',
+        '-y',
+        tempOutput,
+      ];
+
+      const proc = spawn(ffmpegPath, args);
+      let stderrLog = '';
+
+      proc.stderr.on('data', (data) => { stderrLog += data.toString(); });
+
+      proc.on('close', (code) => {
+        if (code === 0 && fs.existsSync(tempOutput)) {
+          // Replace original with remuxed file
+          try {
+            fs.unlinkSync(this.data.outputPath);
+            fs.renameSync(tempOutput, this.data.outputPath);
+          } catch (e) {
+            console.error('[remux] File replace failed:', e.message);
+          }
+          resolve();
+        } else {
+          // Remux failed — keep original file (still playable, just wrong duration metadata)
+          console.error('[remux] ffmpeg failed (code', code, '):', stderrLog.slice(-300));
+          try { fs.unlinkSync(tempOutput); } catch (_) {}
+          resolve(); // Don't reject — file is still usable
+        }
+      });
+
+      proc.on('error', () => resolve()); // Don't reject on ffmpeg spawn failure
+    });
   }
 
   cleanup() {

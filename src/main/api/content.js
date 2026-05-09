@@ -282,15 +282,23 @@ async function fetchContentData(vodUrl, cookies, downloadPath) {
     let manifestData;
     let finalContentType = 'video';
 
-    if (info.liveRewindPlaybackJson) {
-      manifestData = getVideoM3u8Manifest(info.liveRewindPlaybackJson);
-      finalContentType = 'm3u8';
-    } else {
-      manifestData = await getVideoDashManifest(info.videoId, info.inKey);
+    // Prefer DASH/MP4 (faster, single connection) over M3U8 (segment-based, slower)
+    if (info.videoId && info.inKey) {
+      try {
+        manifestData = await getVideoDashManifest(info.videoId, info.inKey);
+      } catch (_) {
+        manifestData = null;
+      }
     }
 
-    if (!manifestData.resolutions || manifestData.resolutions.length === 0) {
-      throw new Error(`매니페스트를 가져올 수 없습니다: ${vodUrl}`);
+    // Fallback to M3U8 if DASH unavailable or returned no resolutions
+    if (!manifestData || !manifestData.resolutions || manifestData.resolutions.length === 0) {
+      if (info.liveRewindPlaybackJson) {
+        manifestData = getVideoM3u8Manifest(info.liveRewindPlaybackJson);
+        finalContentType = 'm3u8';
+      } else {
+        throw new Error(`매니페스트를 가져올 수 없습니다: ${vodUrl}`);
+      }
     }
 
     result = {
